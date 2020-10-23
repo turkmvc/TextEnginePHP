@@ -35,9 +35,8 @@ class IncludeEvulator extends BaseEvulator
 			$tempitem = new TextElement();
 			$tempitem->ElemName = '#document';
 			$this->Evulator->ParseText($tempitem, $content);
-			/* Sonraki güncellemede gelecek
-			$elems = array();
-			if (!xpathold)
+			$elems = new TextElements();
+			if (!$xpathold)
 			{
 				$elems = $tempelem2->FindByXPath($xpath);
 			}
@@ -45,11 +44,11 @@ class IncludeEvulator extends BaseEvulator
 			{
 				$elems = $tempelem2->FindByXPathOld($xpath);
 			}
-			for ($i = 0; $i < count($elems); $i++)
+			for ($i = 0; $i < $elems->GetCount(); $i++)
 			{
-				$elems[$i]->Parent = $tempelem;
-				$tempelem->SubElements->AddElement($elems[$i]);
-			}*/
+				$elems[$i]->Parent = &$tempelem;
+				$tempelem->AddElement($elems[$i]);
+			}
 		}
 		return $result;
 	}
@@ -94,9 +93,8 @@ class IncludeEvulator extends BaseEvulator
 			}
 			else
 			{
-				/* Sonraki güncellemede gelecek
-				$elems = array();
-				if (!xpathold)
+				$elems = new TextElements();
+				if (!$xpathold)
 				{
 					$elems = $tempelem2->FindByXPath($xpath);
 				}
@@ -104,11 +102,11 @@ class IncludeEvulator extends BaseEvulator
 				{
 					$elems = $tempelem2->FindByXPathOld($xpath);
 				}
-				for ($i = 0; $i < count($elems); $i++)
+				for ($i = 0; $i < $elems->GetCount(); $i++)
 				{
-					$elems[$i]->Parent = $tempelem;
-					$tempelem->SubElements->AddElement($elems[$i]);
-				}*/
+					$elems[$i]->Parent = &$tempelem;
+					$tempelem->AddElement($elems[$i]);
+				}
 			}
 			$cresult = $tempelem->EvulateValue(0, 0,$vars);
 			$result->TextContent .= $cresult->TextContent;

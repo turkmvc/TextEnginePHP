@@ -27,6 +27,7 @@ class ComputeActions
 			return null;
 		}
 		if ($operator == "||" || $operator == "|" || $operator == "or" || $operator == "&&" || $operator == "&" || $operator == "and") {
+			
 			$lefstate = !empty($item1);
 			$rightstate = !empty($item2);
 			if ($operator == "||" || $operator == "|" || $operator == "or") {
@@ -53,6 +54,8 @@ class ComputeActions
 			case '&':
 				return $item1 & $item2;
 			case '==':
+				return $item1 == $item2;
+			case '=':
 				return $item1 == $item2;
 			case '!=':
 				return $item1 != $item2;

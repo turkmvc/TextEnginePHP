@@ -19,16 +19,18 @@ class TextEvulatorParser
 		$this->Text = $text;
 		$this->TextLength = strlen($this->Text);
 		$this->Evulator->IsParseMode = true;
+		unset($currenttag);
 		if($baseitem == null)
 		{
-			$currenttag = $this->Evulator->Elements;
+			$currenttag = &$this->Evulator->Elements;
 		}
 		else
 		{
-			$currenttag = $baseitem;
+			$currenttag = &$baseitem;
 		}
 		$currenttag->BaseEvulator =& $this->Evulator;
 		for ($i = 0; $i < $this->TextLength; $i++) {
+			unset($tag);
 			$tag = $this->ParseTag($i, $currenttag);
 			if($tag == null)
 			{
@@ -60,14 +62,16 @@ class TextEvulatorParser
 						$elem->BaseEvulator = &$this->Evulator;
 						$prevtag->Closed = true;
 						if ($previtem != null) {
-							$previtem->Parent = $elem;
+							$previtem->Parent = &$elem;
 							$elem->AddElement($previtem);
 						}
 						else
 						{
-							$currenttag = $elem;
+							unset($currenttag);
+							$currenttag = &$elem;
 						}
-						$previtem = $elem;
+						unset($previtem);
+						$previtem = &$elem;
 
 					} else {
 						if($prevtag->ElemName != $tag->ElemName)
@@ -76,11 +80,12 @@ class TextEvulatorParser
 							//Alias
 						}
 						if ($previtem != null) {
-							$previtem->Parent = $prevtag->Parent;
+							$previtem->Parent = &$prevtag->Parent;
 							$previtem->Parent->AddElement($previtem);
 						}
 						else{
-							$currenttag = $prevtag->Parent;
+							unset($currenttag);
+							$currenttag = &$prevtag->Parent;
 						}
 
 						$prevtag->Closed = true;
@@ -95,7 +100,8 @@ class TextEvulatorParser
 					throw new Exception("Syntax Error");
 				}
 			} else if (!$tag->Closed) {
-				$currenttag = $tag;
+				unset($currenttag);
+				$currenttag = &$tag;
 			}
 
 

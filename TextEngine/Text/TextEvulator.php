@@ -41,7 +41,7 @@ class TextEvulator
 		$this->SavedMacrosList = new SavedMacros();
 		$this->Elements = new TextElement();
 		$this->LocalVariables = new ArrayGroup();
-		$this->Elements->elemName = "#document";
+		$this->Elements->ElemName = "#document";
 		$this->LocalVariables->AddArray($this->DefineParameters);
 		if ($isfile) {
 			$this->Text = file_get_contents( $text);

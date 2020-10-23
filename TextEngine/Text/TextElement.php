@@ -40,19 +40,49 @@ class TextElement
 	public $TagAttrib;
 	
 	public $ElementType = TextElementType::ElementNode;
-	public function Index()
+	public function __construct()
 	{
+		$this->SubElements = new TextElements();
+	}
+	public function Depth()
+	{
+		$parent = $this->Parent;
+		$total = 0;
+		while ($parent != null && $parent->ElemName != "#document")
+		{
+			$total++;
+			$parent = $parent->Parent;
+		}
+		return $total;
+	}
+	public function Index()
+	{	
 		if(!$this->Parent) return -1;
-		return array_search($this, $this->Parent->SubElements);
+		$total = 0;
+		for($i = 0; $i < $this->Parent->SubElementsCount; $i++)
+		{
+			
+			unset($current);
+			$current = &$this->Parent->SubElements[$i];
+			if($current == $this)
+			{
+				return $i;
+			}
+		}
+		return -1;
 	}
 	/** @param $element TextElement */
 	public function AddElement(&$element)
 	{
-		$this->SubElements[] = $element;
+		$this->SubElements->Add($element);
 		$element->Index_old = $this->SubElementsCount;
 		$this->SubElementsCount++;
-	}
 
+	}
+	public function HasAttribute($name)
+	{
+		return isset($this->ElemAttr[$name]);
+	}
 	public function GetAttribute($name, $default = null)
 	{
 		return array_value($name, $this->ElemAttr, $default);
@@ -82,7 +112,7 @@ class TextElement
 	public function SetInner($text)
 	{
 		$this->BaseEvulator->Text = $text;
-		$this->SubElements = array();
+		$this->SubElements = new TextElements();
 		$this->SubElementsCount = 0;
 		$this->BaseEvulator->Parse($this);
 		return $this;
@@ -444,6 +474,295 @@ class TextElement
 		}
 		return $result;
 	}
+	public function GetElementsHasAttributes($name, $depthscan = false, $limit = 0)
+	{
+		$elements = new TextElements();
+		$lower = strtolower($name);
+		for ($i = 0; $i < $this->SubElementsCount; $i++)
+		{
+			unset($elem);
+			$elem = &$this->SubElements[$i];
+			if (count($elem->ElemAttr) > 0 && $lower == "*")
+			{
+				$elements->Add($elem);
+			}
+			else
+			{
+				if ($elem->HasAttribute($lower))
+				{
+					$elements->Add($elem);
+				}
+			}
+			if ($depthscan && $elem->SubElementsCount > 0)
+			{
+				$elements->AddRange($elem->GetElementsHasAttributes($name, $depthscan));
+			}
+		}
+		return $elements;
+	}
+	public function GetElementsByTagName($name, $depthscan = false, $limit = 0)
+	{
+		$elements = new TextElements();
+		$lower = strtolower($name);
+		
+		for ($i = 0; $i < $this->SubElementsCount; $i++)
+		{
+			unset($elem);
+			$elem = &$this->SubElements[$i];
+			if (strtolower($elem->ElemName) == $lower || $lower == "*")
+			{
+				$elements->Add($elem);
+
+				if ($limit > 0 && count($elements) >= $limit)
+				{
+					break;
+				}
+			}
+			if ($depthscan && $elem->SubElementsCount > 0)
+			{
+				$elements->AddRange($elem->GetElementsByTagName($name, $depthscan));
+			}
+
+		}
+		return $elements;
+	}
+	public function GetElementsByPath($block)
+	{
+		$elements = new TextElements();
+		for ($i = 0; $i < $this->SubElementsCount; $i++)
+		{
+			unset($subelem);
+			$subelem = &$this->SubElements[$i];		
+			if ($subelem->ElementType != TextElementType::ElementNode) continue;
+			for ($j = 0; $j < count($block); $j++)
+			{
+				$curblock = $block[j];
+				if ($curblock->IsAttributeSelector)
+				{
+					if ($curblock->BlockName == "*")
+					{
+						if (count($subelem->ElemAttr) == 0)
+						{
+							continue;
+						}
+					}
+					else
+					{
+						if (!$subelem.HasAttribute($curblock->BlockName))
+						{
+							continue;
+						}
+					}
+				}
+				else
+				{
+					if ($curblock->BlockName != "*" && $curblock->BlockName != $subelem->ElemName)
+					{
+						continue;
+					}
+				}
+				if (in_array($subelem, $elements) || (count($curblock->XPathExpressions.Count == 0) || XPathActions::XExpressionSuccess($subelem, $curblock->XPathExpressions)))
+				{
+					$element[] = &$subelem;
+					XPathActions::Eliminate($elements, $curblock);
+				}
+				break;
+
+			}
+		}
+		return $elements;
+	}
+	public function FindByXPathBlock($block)
+	{
+		$foundedElems = new TextElements();
+		
+		if ($block->IsAttributeSelector)
+		{
+			$foundedElems = $this->GetElementsHasAttributes($block->BlockName, $block->BlockType == \TextEngine\XPathBlockType::XPathBlockScanAllElem);
+		}
+		else
+		{
+			if (!empty($block->BlockName))
+			{
+				if ($block->BlockName == ".")
+				{
+					$foundedElems[] = &$this;
+					return $foundedElems;
+				}
+				else if ($block->BlockName == "..")
+				{
+					$foundedElems[] = &$this->Parent;
+					return $foundedElems;
+
+				}
+				else
+				{
+					
+					$foundedElems = $this->GetElementsByTagName($block->BlockName, $block->BlockType == \TextEngine\XPathBlockType::XPathBlockScanAllElem);
+				}
+			}
+		}
+		if (count($block->XPathExpressions) > 0 && $foundedElems->GetCount() > 0)
+		{
+
+			for ($i = 0; $i < count($block->XPathExpressions); $i++)
+			{
+				unset($exp);
+				$exp = &$block->XPathExpressions[$i];
+			
+				$foundedElems = \TextEngine\XPathActions::Eliminate($foundedElems, $exp);
+	
+				if ($foundedElems->GetCount() == 0)
+				{
+					break;
+				}
+			}
+		}
+		return $foundedElems;
+	}
+
+	public function FindByXPath($xpath)
+	{
+		$elements = new TextElements();
+		$xpathItem = \TextEngine\XPathItem::ParseNew($xpath);
+		$elements = $this->FindByXPathByBlockContainer($xpathItem->XPathBlockList);
+		$elements->SortItems();
+		return $elements;
+	}
+	private function FindByXPathByBlockContainer(&$container, &$senderitems = null)
+	{
+		$elements = new TextElements();
+		$inor = true;
+		for ($i = 0; $i < count($container); $i++)
+		{
+			unset($curblock);
+			$curblocks = &$container[$i];
+			if ($curblocks->IsOr())
+			{
+				$inor = true;
+				continue;
+			}
+			if (!$inor)
+			{
+
+				if ($curblocks->IsBlocks())
+				{
+					$elements = $this->FindByXPathBlockList($curblocks, $elements);
+				}
+				else
+				{
+					$elements->AddRange($this->FindByXPathPar($curblocks, $senderitems));
+				}
+			}
+			else
+			{
+				if ($curblocks->IsBlocks())
+				{
+					$elements = $this->FindByXPathBlockList($curblocks);
+				}
+				else
+				{
+					$elements = $this->FindByXPathPar($curblocks);
+				}
+			}
+			$inor = false;
+		}
+		return $elements;
+	}
+
+	public function FindByXPathPar(&$xpar, $senderitems = null)
+	{
+		$elements = new TextElements();
+		
+		$elements = $this->FindByXPathByBlockContainer($xpar->XPathBlockList, $senderitems);
+		if (count($xpar->XPathExpressions) > 0 && count($elements) > 0)
+		{
+			$elements->SortItems();
+			for ($j = 0; $j < count($xpar->XPathExpressions); $j++)
+			{
+				unset($exp);
+				$exp = &$xpar->XPathExpressions[$j];
+				$elements = XPathActions::Eliminate($elements, $exp);
+				if (count($elements) == 0)
+				{
+					break;
+				}
+			}
+		}
+		return $elements;
+	}
+	public function FindByXPathBlockList($blocks, $senderlist = null)
+	{
+		
+		$elements = $senderlist;
+
+		for ($i = 0; $i < $blocks->GetCount(); $i++)
+		{
+			unset($xblock);
+			$xblock = &$blocks[$i];
+			if ($i == 0 && $senderlist == null)
+			{
+				$elements = $this->FindByXPathBlock($xblock);
+			
+			}
+			else
+			{
+				$elements = $elements->FindByXPath($xblock);
+			}
+		}
+		return $elements;
+	}
+	public function FindByXPathOld($xpath)
+	{
+	
+		$elements = new TextElements();
+		$fn = new \TextEngine\XPathFunctions();
+		$xpathblock = \TextEngine\XPathItem::Parse($xpath);
+		$actions = new \TextEngine\XPathActions();
+		$actions->XPathFunctions = new \TextEngine\XPathFunctions();
+		for ($i = 0; $i < $xpathblock->XPathBlocks->GetCount(); $i++)
+		{
+			unset($xblock);
+			unset($elements);
+			$xblock = &$xpathblock->XPathBlocks[$i];
+			if ($i == 0)
+			{
+				$elements = $this->FindByXPathBlock($xblock);
+			}
+			else
+			{
+				unset($newelements);
+				$newelements = new TextElements();
+				for ($j = 0; j < $elements->GetCount(); $j++)
+				{
+					unset($elem);
+					$elem = &$elements[$j];
+					$nextelems = $elem->FindByXPathBlock($xblock);
+					for ($k = 0; $k < $nextelems->GetCount(); $k++)
+					{
+						if ($newelements->Contains($nextelems[$k])) continue;
+						$newelements->Add($nextelems[k]);
+					}
+				}
+				
+				$elements = &$newelements;
+			}
+		}
+		return $elements;
+	}
+	public function XPathSuccessSingle(&$block)
+	{
+		if ($this->ElementType != TextElementType::ElementNode || ($block->BlockName != "*" && $block->BlockName != $this->ElemName)) return false;
+		if (count($block->XPathExpressions) > 0)
+		{
+			$myIndex = $this->Index();
+			for ($i = 0; $i < count($block->XPathExpressions); $i++)
+			{
+				if (!XPathActions::XExpressionSuccess($this, $block->XPathExpressions[$i], null, $myIndex)) return false;
+			}
+		}
+		return true;
+	}	
 }
 class TextEvulateResult
 {

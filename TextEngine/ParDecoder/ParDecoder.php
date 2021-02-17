@@ -21,12 +21,13 @@ class ParDecoder
 		$isopened = false;
 		for ($i = 0; $i < $this->TextLength; $i++) {
 			$cur = $this->Text[$i];
-			if ($cur == '=' || $cur == '>' || $cur == '<' || $cur == '?' || $cur == ':') {
+			$prev = '\0';
+			if ($i - 1 >= 0) {
+				$prev = $this->Text[$i - 1];
+			}
+			if (($prev != ')' && $prev != ']' && $prev != '}' ) && ($cur == '=' || $cur == '>' || $cur == '<' || $cur == '?' || $cur == ':')) {
 				if ($isopened) {
-					$prev = '\0';
-					if ($i - 1 >= 0) {
-						$prev = $this->Text[$i - 1];
-					}
+
 					$item = new InnerItem();
 					$item->IsOperator = true;
 					if (($prev == '>' && $cur == '=') || ($prev == '<' && $cur == '=') || ($prev == '!' && $cur == '=') || ($prev == '=' && $cur == '>')) {

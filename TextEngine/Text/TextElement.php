@@ -13,7 +13,28 @@ abstract class TextElementType
 }
 class TextElement
 {
-	public $ElemName;
+	private $elemName;
+	function __get($prop) 
+	{
+		if($prop == "ElemName")
+		{
+			return $this->elemName;
+		}
+        return $this->$prop;
+	}
+    function __set($prop, $val) 
+	{
+		if($prop == "ElemName")
+		{
+			$this->elemName = $val;
+			if($this->BaseEvulator && in_array(strtolower($val), $this->BaseEvulator->NoAttributedTags))
+			{
+				$this->NoAttrib = true;
+			}
+			return;
+		}
+        $this->$prop = $val;
+	}
 	/** @var array */
 	public $ElemAttr = array();
 	/** @var TextEvulator */
@@ -34,12 +55,14 @@ class TextElement
 	/** @var string */
 	public $AliasName;
 	public $AutoClosed;
+	public $NoAttrib;
 	/** @var int */
 	public $Index_old;
 	/** @var string */
 	public $TagAttrib;
 	
 	public $ElementType = TextElementType::ElementNode;
+
 	public function __construct()
 	{
 		$this->SubElements = new TextElements();
@@ -157,7 +180,7 @@ class TextElement
 			if ($this->AutoAdded) {
 				if (!$this->SubElements) return '';
 			}
-			$text .= $this->BaseEvulator->LeftTag . $this->ElemName . $additional . HTMLUTIL::toAttribute($this->ElemAttr);
+			$text .= $this->BaseEvulator->LeftTag . $this->ElemName . $additional . (($this->NoAttrib && $this->ElementType == TextElementType::ElementNode) ? ' ' . $this->Value : HTMLUTIL::toAttribute($this->ElemAttr));
 			if ($this->DirectClosed) {
 				$text .= " /" . $this->BaseEvulator->RightTag;
 			} else if ($this->AutoClosed) {
@@ -198,7 +221,7 @@ class TextElement
 			{
 				$additional .= '=' . $this->TagAttrib;
 			}
-			$text .= $this->BaseEvulator->LeftTag . $this->ElemName . $additional . HTMLUTIL::toAttribute($this->ElemAttr);
+			$text .= $this->BaseEvulator->LeftTag . $this->ElemName . $additional . (($this->NoAttrib) ? ' ' . $this->Value : HTMLUTIL::toAttribute($this->ElemAttr));
 			if ($this->DirectClosed)
 			{
 				$text .= " /" . $this->BaseEvulator->RightTag;

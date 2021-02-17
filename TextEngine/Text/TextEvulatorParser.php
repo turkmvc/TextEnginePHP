@@ -37,7 +37,6 @@ class TextEvulatorParser
 				$i = $this->pos;
 				continue;
 			}
-			$tag->BaseEvulator=& $this->Evulator;
 			if (!$tag->SlashUsed) {
 				$currenttag->AddElement($tag);
 				if ($tag->DirectClosed)
@@ -185,6 +184,7 @@ class TextEvulatorParser
 		$inspec = false;
 		$tagElement = new TextElement();
 		$tagElement->Parent = $parent;
+		$tagElement->BaseEvulator=& $this->Evulator;
 		$istextnode = false;
 		$intag = false;
 		for ($i = $start; $i < $this->TextLength; $i++) {
@@ -396,7 +396,14 @@ class TextEvulatorParser
 					continue;
 				}
 			}
-
+			if($namefound &&  $tagElement->NoAttrib)
+			{
+				if($cur != $this->Evulator->RightTag)
+				{
+					$current .= $cur;
+					continue;
+				}
+			}
 			if ($firstslashused && $namefound) {
 				if ($cur != $this->Evulator->RightTag) {
 					if ($cur == ' ' && $next != '\t' && $next != ' ') {
@@ -489,7 +496,11 @@ class TextEvulatorParser
 						$tagElement->ElemName = $current;
 						$current = '';
 					}
-					if($currentName == '##set_TAG_ATTR##')
+					if($tagElement->NoAttrib)
+					{
+						$tagElement->Value = $current;
+					}
+					else if($currentName == '##set_TAG_ATTR##')
 					{
 						$tagElement->TagAttrib = $current;
 					}

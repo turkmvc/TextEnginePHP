@@ -67,7 +67,7 @@ abstract class BaseEvulator
 	}
 	protected function ConditionSuccess(&$tag, $attr = 'c')
 	{
-		$condition = $tag->GetAttribute($attr);
+		$condition = ($tag->NoAttrib) ? $tag->Value : $tag->GetAttribute($attr);
 		if($condition === null) return true;
 		$res = $this->EvulateText($condition);
 		return $res;

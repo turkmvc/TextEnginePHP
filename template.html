@@ -17,7 +17,7 @@
 		<b>Grup:</b> {%user.GetGroup()}
 	</div>
 	<br>
-	{if c='user.HasCustomInformations()'}
+	{if user.HasCustomInformations()}
 		<div>Kullanıcı Tanımlı Bilgiler</div>
 		{foreach var='info' in='user.Informations'}
 				<div>{%loop_count + 1}: <b>{%loop_key}</b> {%info}</div>

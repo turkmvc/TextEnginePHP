@@ -19,6 +19,7 @@ class TextEvulator
 	public $DecodeAmpCode = false;
 	public $AmpMaps = array();
 	public $ConditionalTags = array();
+	public $NoAttributedTags = array();
 	public $SupportCDATA = false;
 	public $SupportExclamationTag = false;
 	public $AllowXMLTag = true;
@@ -48,6 +49,7 @@ class TextEvulator
 		} else {
 			$this->Text = $text;
 		}
+		$this->InitNoAttributedTags();
 		$this->InitEvulator();
 		$this->InitAmpMaps();
 		$this->InitConditionalTags();
@@ -70,6 +72,10 @@ class TextEvulator
 		$this->EvulatorTypes["include"] = "IncludeEvulator";
 		$this->EvulatorTypes["set"] = "SetEvulator";
 		$this->EvulatorTypes["unset"] = "UnsetEvulator";
+	}
+	private function InitNoAttributedTags()
+	{
+		$this->NoAttributedTags[] = "if";
 	}
 	private function InitConditionalTags()
 	{
